@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat - Websocket Kotlin</title>
+
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+
+    <style>
+        .full-height {
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="full-height">
+
+Canvas
+<canvas height="600" id="canvas" width="600"></canvas>
+
+<script>
+    var sun = new Image();
+    var moon = new Image();
+    var earth = new Image();
+
+    function init() {
+        sun.src = 'https://mdn.mozillademos.org/files/1456/Canvas_sun.png';
+        moon.src = 'https://mdn.mozillademos.org/files/1443/Canvas_moon.png';
+        earth.src = 'https://mdn.mozillademos.org/files/1429/Canvas_earth.png';
+    }
+
+
+    function drawOneFrame(jsonData) {
+        console.log(jsonData);
+        var ctx = document.getElementById('canvas').getContext('2d');
+        let width = 600;
+        let height = 600;
+
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.clearRect(0, 0, width, height); // clear canvas
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.strokeStyle = 'rgba(0, 153, 255, 0.4)';
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+
+
+        jsonData.forEach(function (gameObject) {
+            let point = gameObject.relativePosition;
+            console.log(point);
+            ctx.save();
+            ctx.translate(point.x * (width / 2), point.y * (width / 2));
+            ctx.drawImage(moon, -3.5, -3.5);
+            ctx.restore();
+        });
+        ctx.restore();
+
+        // circle
+
+        ctx.beginPath();
+        ctx.arc(width / 2, width / 2, width / 2, 0, Math.PI * 2, false); // Earth orbit
+        ctx.stroke();
+    }
+
+    init();
+
+
+    //var webSocket = new WebSocket("ws://" + location.hostname + ":" + location.port + "/chat");
+    var webSocket = new SockJS('/chat');
+    webSocket.onmessage = function (msg) {
+        receievMsg(JSON.parse(msg.data))
+    };
+    webSocket.onclose = function () {
+        alert("Server Disconnect You");
+    };
+    webSocket.onopen = function () {
+        sendMessage("join", "Pilot one");
+    };
+
+    function sendMessage(type, data) {
+        if (data !== "") {
+            webSocket.send(JSON.stringify({type: type, data: data}));
+
+        }
+    }
+
+    function receievMsg(msg) {
+        console.log(msg.msgType);
+        if (msg.msgType == "updateView") {
+            drawOneFrame(msg.data);
+        } else if (msg.msgType == "join") {
+            addUser(msg.data);
+        }
+    }
+</script>
+</body>
+</html>
